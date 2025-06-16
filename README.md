@@ -1,6 +1,6 @@
 # RuneKeeper 🔐✨
 A terminal-based minimalist password manager for those who value security and TUIs
-
+<img src="assets/screencast.gif" width=600 alt="">
 ## 📜 Description
 RuneKeeper is a Ruby-powered TUI password manager. Like a dwarven vaultkeeper guarding ancient runes, it securely stores your credentials in an encrypted local file, allowing you to manage multiple accounts per service with ease.
 
@@ -25,9 +25,9 @@ RuneKeeper is a Ruby-powered TUI password manager. Like a dwarven vaultkeeper gu
 - CLI Mode – Support headless usage for scripting.
 
 ## 🛡️ Security Notes
-Passwords are encrypted using AES-256-CBC with a key derived from your master password via PBKDF2.
+Passwords are encrypted using AES-256 with a key derived from your master password via SHA256.
 
-The vault file (~/.rune_keeper.vault) is readable only by your user account.
+The vault file (~/.runekeeper/vault) is readable only by your user account.
 
 Never share your master password! RuneKeeper cannot recover it if lost.
 
