@@ -1,7 +1,10 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    crypt (2.2.1)
+    digest (3.2.0)
     e2mmap (0.1.0)
+    json (2.12.2)
     pastel (0.8.0)
       tty-color (~> 0.5)
     shell (0.8.1)
@@ -25,6 +28,9 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  crypt (~> 2.2)
+  digest (~> 3.2)
+  json (~> 2.12)
   shell (~> 0.8.1)
   tty-prompt (~> 0.23.1)
 

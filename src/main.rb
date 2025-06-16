@@ -1,22 +1,61 @@
 require "tty-prompt"
 require "shell"
+require "json"
+require "crypt/rijndael"
+require "digest"
 
 @sh = Shell.cd("~")
 @prompt = TTY::Prompt.new(quiet: true)
 @passwords = {}
 
-@sh.mkdir(".runekeeper") unless @sh.exist?(".runekeeper")
-unless @sh.exist?(".runekeeper/data") then
-  f = @sh.open(".runekeeper/data", "w")
+def get_master_key()
+  f = @sh.open(".runekeeper/.master", "r")
+  pass = f.read
+  f.close
+
+  return pass
+end
+
+def generate_hash(key)
+  Digest::SHA256.hexdigest key
+end
+
+def encrypt_data(key, data)
+  rijndael = Crypt::Rijndael.new(key)
+  rijndael.encrypt_string(data)
+end
+
+def decrypt_data(key, data)
+  rijndael = Crypt::Rijndael.new(key)
+  rijndael.decrypt_string(data)
+end
+
+def save_vault(data)
+  key = get_master_key
+  f = @sh.open(".runekeeper/vault", "w")
+  stringified = JSON.generate data
+  encrypted = encrypt_data(key, stringified)
+  f.print encrypted
   f.close
 end
+
+def read_vault()
+  key = get_master_key
+  f = @sh.open(".runekeeper/vault", "r")
+  data = f.read
+  f.close
+
+  data = decrypt_data(key, data)
+  JSON.parse data
+end
+
+@sh.mkdir(".runekeeper") unless @sh.exist?(".runekeeper")
 
 if @sh.exist?(".runekeeper/.master")
   password = @prompt.mask("Enter master password:")
 
-  f = @sh.open(".runekeeper/.master", "r")
-  pass = f.read
-  if password != pass then
+  pass = get_master_key
+  if generate_hash(password) != pass then
     @prompt.error "Wrong password. Exit."
     exit
   end
@@ -25,6 +64,7 @@ else
   repeat = @prompt.mask("Repeat password:")
 
   if password == repeat then
+    password = generate_hash(password)
     f = @sh.open(".runekeeper/.master", "w")
     f.print password
     f.close
@@ -33,29 +73,41 @@ else
   end
 end
 
+unless @sh.exist?(".runekeeper/vault") then
+  vault = {}
+  save_vault vault
+end
+
 def list_passwords()
-  if @passwords.empty?
+  vault = read_vault
+  if vault.empty?
     @prompt.say("There is no passwords :c")
     @prompt.keypress("Press any key to continue")
   else
-    app = @prompt.select("Choose app", @passwords.keys + ["Exit"], filter: true, per_page: 4)
+    app = @prompt.select("Choose app", vault.keys + ["Exit"], filter: true, per_page: 4)
     if app == "Exit"
       return
     end
 
-    login = @prompt.select("Choose account", @passwords[app].collect {|account| account[:login]}, filter: true, per_page: 4)
-    @prompt.warn("Password for #{app}:#{login}: #{@passwords[app].select {|account| account[:login] == login}[0][:password]}")
+    login = @prompt.select("Choose account", vault[app].collect {|account| account["login"]}, filter: true, per_page: 4)
+    password = vault[app].select {|account| account["login"] == login}[0]["password"]
+    @prompt.warn("Credentials for #{app}:\n[Login   ] #{login}\n[Password] #{password}")
     @prompt.keypress("Press any key to continue")
   end
 end
 
 # TODO: Add input validation
 def add_new_password()
-  app_name = @prompt.ask("Enter app name:")
+  app = @prompt.ask("Enter app name:")
   login = @prompt.ask("Enter login:")
   password = @prompt.mask("Enter password:")
-  @passwords[app_name] = Array.new unless @passwords.keys.include?(app_name)
-  @passwords[app_name] << {login: login, password: password}
+
+  vault = read_vault
+
+  vault[app] = Array.new unless vault.keys.include?(app)
+  vault[app] << {login: login, password: password}
+
+  save_vault vault
 end
 
 # TODO: Add going back to previous menu on pressing escape
