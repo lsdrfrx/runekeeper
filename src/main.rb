@@ -45,7 +45,7 @@ def list_passwords()
 
     login = @prompt.select("Choose account", @passwords[app].collect {|account| account[:login]}, filter: true, per_page: 4)
     @prompt.warn("Password for #{app}:#{login}: #{@passwords[app].select {|account| account[:login] == login}[0][:password]}")
-    @prompt.warn("This is sensible data! Be careful")
+    @prompt.keypress("Press any key to continue")
   end
 end
 
@@ -60,6 +60,7 @@ end
 
 # TODO: Add going back to previous menu on pressing escape
 loop do
+  system "clear"
   action = @prompt.select("Select action", [ "List passwords", "Add new password", "Exit" ])
   if action == "Exit"
     exit
