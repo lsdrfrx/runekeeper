@@ -109,7 +109,6 @@ def show_credentials_info(app, login, password)
     @prompt.say("Password moved to clipboard")
     @prompt.keypress("Press any key to continue")
 
-  # TODO: Допилить функцию
   when "Edit password"
     new_password = @prompt.ask("Enter new password: ")
     account = vault[app].find { |account| account["login"] == login && account["password"] == password }
