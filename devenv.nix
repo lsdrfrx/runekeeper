@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 {
-  packages = [ pkgs.git ];
+  packages = [ pkgs.git pkgs.bundix ];
 
   languages.ruby = {
     enable = true;

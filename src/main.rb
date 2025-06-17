@@ -84,19 +84,66 @@ def list_passwords()
     @prompt.say("There is no passwords :c")
     @prompt.keypress("Press any key to continue")
   else
-    app = @prompt.select("Choose app", vault.keys + ["Exit"], filter: true, per_page: 4)
+    app = @prompt.select("Choose app", vault.keys + ["Back"], filter: true, per_page: 4)
     if app == "Exit"
       return
     end
 
     login = @prompt.select("Choose account", vault[app].collect {|account| account["login"]}, filter: true, per_page: 4)
     password = vault[app].select {|account| account["login"] == login}[0]["password"]
-    @prompt.warn("Credentials for #{app}:\n[Login   ] #{login}\n[Password] #{password}")
-    @prompt.keypress("Press any key to continue")
+
+    show_credentials_info(app, login, password)
   end
 end
 
-# TODO: Add input validation
+def show_credentials_info(app, login, password)
+  vault = read_vault
+
+  @prompt.warn("Credentials for #{app}:\n[Login   ] #{login}\n[Password] #{password}")
+
+  action = @prompt.select("", ["Copy password", "Edit password", "Delete credentials", "Back"])
+  case action
+  when "Copy password"
+    system "wl-copy #{password}"
+
+    @prompt.say("Password moved to clipboard")
+    @prompt.keypress("Press any key to continue")
+
+  # TODO: Допилить функцию
+  when "Edit password"
+    new_password = @prompt.ask("Enter new password: ")
+    account = vault[app].find { |account| account["login"] == login && account["password"] == password }
+    vault[app] = vault[app].delete_if { |account| account["login"] == login && account["password"] == password }
+    account["password"] = new_password
+    vault[app] << account
+
+    save_vault vault
+    @prompt.say("Password changed successfully")
+    @prompt.keypress("Press any key to continue")
+
+    system "clear"
+    return show_credentials_info(app, login, new_password)
+  when "Delete credentials"
+    vault[app] = vault[app].delete_if { |account| account["login"] == login && account["password"] == password }
+    if vault[app].length == 0
+      vault.delete(app)
+    end
+    save_vault vault
+
+    @prompt.say("Credentials deleted successfully")
+    @prompt.keypress("Press any key to continue")
+    return
+  when "Back"
+    return
+  end
+
+  system "clear"
+  show_credentials_info(app, login, password)
+end
+
+# TODO:
+# Add input validation
+# Add password generation option
 def add_new_password()
   app = @prompt.ask("Enter app name:")
   login = @prompt.ask("Enter login:")
